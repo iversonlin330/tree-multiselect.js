@@ -8,11 +8,9 @@ var UiBuilder = require('./ui-builder');
 var Util = require('./utility');
 
 var treeMultiselect = function treeMultiselect(opts) {
-  var _this = this;
-
   var options = mergeDefaultOptions(opts);
-  this.each(function () {
-    var $originalSelect = $(_this);
+  this.each(function (idx, el) {
+    var $originalSelect = $(el);
     $originalSelect.attr('multiple', '').css('display', 'none');
 
     var tree = new Tree($originalSelect, options);
@@ -514,12 +512,7 @@ function assert(bool, message) {
 
 function getKey(el) {
   assert(el);
-  var item = el.attributes.getNamedItem("data-key");
-  if (item) {
-    return parseInt(item.value);
-  } else {
-    return null;
-  }
+  return parseInt(el.getAttribute('data-key'));
 }
 
 function arraySubtract(arr1, arr2) {

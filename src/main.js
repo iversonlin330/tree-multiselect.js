@@ -5,8 +5,8 @@ var Util = require('./utility');
 
 var treeMultiselect = function(opts) {
   var options = mergeDefaultOptions(opts);
-  this.each(() => {
-    var $originalSelect = $(this);
+  this.each((idx, el) => {
+    var $originalSelect = $(el);
     $originalSelect.attr('multiple', '').css('display', 'none');
 
     var tree = new Tree($originalSelect, options);
