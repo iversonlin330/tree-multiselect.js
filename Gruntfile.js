@@ -1,10 +1,14 @@
-var browserify = require("browserify");
-var fs = require("fs");
-
 module.exports = function(grunt) {
   grunt.initConfig({
 
     pkg: grunt.file.readJSON('package.json'),
+
+    eslint: {
+      target: ['src/**/*.js'],
+      options: {
+        configFile: '.eslintrc.yml'
+      }
+    },
 
     browserify: {
       dist: {
@@ -18,25 +22,6 @@ module.exports = function(grunt) {
       }
     },
 
-    // Upload LCOV data to coveralls.io
-    coveralls: {
-      options: {
-        force: true
-      },
-      ci: {
-        src: 'coverage/**/lcov.info'
-      }
-    },
-
-    // JSHint
-    jshint: {
-      options: {
-        esversion: 6
-      },
-      all: ['src/**/*.js']
-    },
-
-
     // Karma runner
     karma: {
       options: {
@@ -45,7 +30,7 @@ module.exports = function(grunt) {
 
       local: {},
 
-      continuous: {
+      watch: {
         autoWatch: true,
         singleRun: false
       }
@@ -63,7 +48,7 @@ module.exports = function(grunt) {
         },
 
         files: {
-          'dist/jquery.tree-multiselect.min.css': 'src/style.scss'
+          'dist/jquery.tree-multiselect.min.css': 'sass/style.scss'
         }
       },
 
@@ -73,7 +58,7 @@ module.exports = function(grunt) {
         },
 
         files: {
-          'dist/jquery.tree-multiselect.css': 'src/style.scss'
+          'dist/jquery.tree-multiselect.css': 'sass/style.scss'
         }
       }
     },
@@ -107,20 +92,19 @@ module.exports = function(grunt) {
 
   grunt.loadNpmTasks('grunt-banner');
   grunt.loadNpmTasks('grunt-browserify');
-  grunt.loadNpmTasks('grunt-coveralls');
-  grunt.loadNpmTasks('grunt-contrib-jshint');
+  grunt.loadNpmTasks('grunt-eslint');
   grunt.loadNpmTasks('grunt-karma');
   grunt.loadNpmTasks('grunt-sass');
   grunt.loadNpmTasks('grunt-contrib-uglify');
 
-  grunt.registerTask('test-local', ['karma:local', 'jshint']);
-  grunt.registerTask('test-travis', ['test-local', 'coveralls']);
-  grunt.registerTask('test-watch', ['karma:continuous']);
-
+  grunt.registerTask('lint', ['eslint']);
   grunt.registerTask('build', ['browserify']);
 
-  grunt.registerTask('release', ['test-local', 'build', 'uglify', 'sass:build', 'sass:min', 'usebanner']);
+  grunt.registerTask('test', ['lint', 'karma:local']);
+  grunt.registerTask('test-watch', ['karma:watch']);
+
+  grunt.registerTask('release', ['test', 'build', 'uglify', 'sass:build', 'sass:min', 'usebanner']);
   grunt.registerTask('watch', ['test-watch']);
 
-  grunt.registerTask('default', 'test-local');
+  grunt.registerTask('default', 'test');
 };

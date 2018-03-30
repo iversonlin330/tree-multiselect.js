@@ -13,14 +13,14 @@ describe('Options', () => {
     var $title = $section.children("div.title");
     assert.equal($title.length, 1);
 
-    Common.selection().each(function() {
-      assert($(this).is(":visible"));
+    Common.section().each(function() {
+      assert(!$(this).hasClass("collapsed"));
     });
 
     $title.click();
 
-    Common.selection().each(function() {
-      assert.notOk($(this).is(":visible"));
+    Common.section().each(function() {
+      assert($(this).hasClass("collapsed"));
     });
   });
 
@@ -36,17 +36,10 @@ describe('Options', () => {
 
     var $section = Common.section();
     assert.equal($section.length, 4);
-    var $visibleSections = $section.filter((idx, el) => {
-      return $(el).is(":visible");
+    var $hiddenSections = $section.filter((idx, el) => {
+      return $(el).hasClass("collapsed");
     });
-    assert.equal($visibleSections.length, 2);
-
-    var $selections = Common.selection();
-    assert.equal($selections.length, 4);
-    var $visibleSelections = $selections.filter((idx, el) => {
-      return $(el).is(":visible");
-    });
-    assert.equal($visibleSelections.length, 0);
+    assert.equal($hiddenSections.length, 4);
   });
 
   it("startCollapsed doesn't do anything if collapsible is false", () => {
@@ -72,13 +65,13 @@ describe('Options', () => {
     assert.equal($title.length, 3);
 
     Common.selection().each(function() {
-      assert($(this).is(":visible"));
+      assert.notOk($(this).hasClass("collapsed"));
     });
 
     $title.each(() => {
       $(this).click();
       Common.selection().each(function() {
-        assert($(this).is(":visible"));
+        assert.notOk($(this).hasClass("collapsed"));
       });
     });
   });
@@ -214,12 +207,12 @@ describe('Options', () => {
                     var selection = expectedSecondSelections[i];
                     assert.equal(selection.text, 'Two');
                     assert.equal(selection.value, 'two');
-                    assert(isNaN(selection.initialIndex));
+                    assert.isNull(selection.initialIndex);
                     assert.equal(selection.section, 'test');
                   }
                   assert.equal(all[0].text, 'One');
                   assert.equal(all[0].value, 'one');
-                  assert(isNaN(all[0].initialIndex));
+                  assert.isNull(all[0].initialIndex);
                   assert.equal(all[0].section, 'test');
                   done();
                 }
@@ -241,7 +234,7 @@ describe('Options', () => {
                   assert.equal(removed.length, 1);
                   assert.equal(removed[0].text, 'One');
                   assert.equal(removed[0].value, 'one');
-                  assert(isNaN(removed[0].initialIndex));
+                  assert.isNull(removed[0].initialIndex);
                   assert.equal(removed[0].section, 'test');
                   done();
                 }
@@ -303,10 +296,8 @@ describe('Options', () => {
 
     $selected = Common.selected();
     assert.equal($selected.length, 2);
-    var $two = $selected.first();
-    var $one = $selected.last();
-    Common.assertSelected($two, {text: 'Two', value: 'two', section: 'test'})
-    Common.assertSelected($one, {text: 'One', value: 'one', section: 'test'})
+    Common.assertSelected($selected.first(), {text: 'Two', value: 'two', section: 'test'})
+    Common.assertSelected($selected.last(), {text: 'One', value: 'one', section: 'test'})
   });
 
   it("doesn't do anything when sorted in same order", () => {
@@ -333,10 +324,8 @@ describe('Options', () => {
 
     $selected = Common.selected();
     assert.equal($selected.length, 2);
-    var $one = $selected.first();
-    var $two = $selected.last();
-    Common.assertSelected($one, {text: 'One', value: 'one', section: 'test'})
-    Common.assertSelected($two, {text: 'Two', value: 'two', section: 'test'})
+    Common.assertSelected($selected.first(), {text: 'One', value: 'one', section: 'test'})
+    Common.assertSelected($selected.last(), {text: 'Two', value: 'two', section: 'test'})
   });
 
   it('select all button works', () => {
@@ -394,4 +383,81 @@ describe('Options', () => {
     var $unselectAll = $(".unselect-all");
     assert.equal($unselectAll.text(), unselectAllText);
   });
+
+  it('can have individual readonly attributes', () => {
+    $("select").append("<option value='one' data-section='test' selected='selected'>One</option>");
+    $("select").append("<option value='two' data-section='test' selected='selected' readonly>Two</option>");
+    $("select").treeMultiselect();
+
+    var $firstSelectionCheckbox = Common.selectionCheckbox({value: 'one'});
+    assert.equal($firstSelectionCheckbox.length, 1);
+    assert.isFalse($firstSelectionCheckbox.prop('disabled'));
+
+    $firstSelectionCheckbox = Common.selectionCheckbox({value: 'two'});
+    assert.equal($firstSelectionCheckbox.length, 1);
+    assert.isTrue($firstSelectionCheckbox.prop('disabled'));
+  });
+
+  it('has readonly attributes that still appear in select val', () => {
+    $("select").append("<option value='one' data-section='test' selected readonly>One</option>");
+    $("select").treeMultiselect();
+
+    assert.deepEqual($("select").val(), ['one'])
+  });
+
+  it('cannot remove readonly elements by selected elements', () => {
+    $("select").append("<option value='one' data-section='test' selected='selected' readonly>One</option>");
+    $("select").append("<option value='two' data-section='test' selected='selected'>Two</option>");
+    $("select").treeMultiselect();
+
+    var $selected = Common.selected();
+    assert.equal($selected.length, 2);
+
+    var $selectedCheckboxes = $selected.children("span.remove-selected");
+    assert.equal($selectedCheckboxes.length, 1);
+    $selectedCheckboxes.click();
+
+    $selected = Common.selected();
+    assert.equal($selected.length, 1);
+
+    $selected = Common.selected({value: 'one'});
+    assert.equal($selected.length, 1);
+  });
+
+  it('can set a maximum number of selections', () => {
+    $("select").append("<option value='one' data-section='test' selected='selected'>One</option>");
+    $("select").append("<option value='two' data-section='test' selected='selected'>Two</option>");
+    $("select").append("<option value='three' data-section='test' selected='selected'>Three</option>");
+    $("select").append("<option value='four' data-section='test' selected='selected'>Four</option>");
+    $("select").treeMultiselect({maxSelections: 2});
+
+    assert.equal(Common.selected().length, 2);
+    assert.deepEqual($("select").val(), ['three', 'four'])
+
+    var $checkbox = Common.selectionCheckbox();
+    $checkbox.first().click();
+
+    assert.equal(Common.selected().length, 2);
+    assert.deepEqual($("select").val(), ['four', 'one'])
+  })
+
+  it('maximum number of selections doesn\'t work with negative numbers', () => {
+    $("select").append("<option value='one' data-section='test' selected='selected'>One</option>");
+    $("select").append("<option value='two' data-section='test' selected='selected'>Two</option>");
+    $("select").append("<option value='three' data-section='test' selected='selected'>Three</option>");
+    $("select").append("<option value='four' data-section='test' selected='selected'>Four</option>");
+    $("select").treeMultiselect({maxSelections: -1});
+
+    assert.equal(Common.selected().length, 4);
+  })
+
+  it('maximum number of selections doesn\'t work with non-numerical truthy values', () => {
+    $("select").append("<option value='one' data-section='test' selected='selected'>One</option>");
+    $("select").append("<option value='two' data-section='test' selected='selected'>Two</option>");
+    $("select").append("<option value='three' data-section='test' selected='selected'>Three</option>");
+    $("select").append("<option value='four' data-section='test' selected='selected'>Four</option>");
+    $("select").treeMultiselect({maxSelections: true});
+
+    assert.equal(Common.selected().length, 4);
+  })
 });

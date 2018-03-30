@@ -1,7 +1,3 @@
-var isparta = require('isparta');
-var browserifyIstanbul = require('browserify-istanbul');
-var path = require('path');
-
 module.exports = function(config) {
   config.set({
 
@@ -54,17 +50,16 @@ module.exports = function(config) {
       debug: true,
 
       transform: [
-        browserifyIstanbul({
-          instrumenter: isparta,
-          instrumenterConfig: { babel: { presets: ["es2015"]  }  },
-          ignore: ['**/node_modules/**', '**/test/**']
-        }),
-
-        ['babelify']
+        ['babelify'],
+        ['browserify-istanbul', {
+          instrumenterConfig: {
+            embedSource: true
+          }
+        }]
       ],
 
       paths: [
-        'src',
+        'src/tree-multiselect',
         'node_modules'
       ]
     },
